@@ -1,7 +1,7 @@
 
 from __future__ import print_function
 import pandas as pd, pdb, numpy as np, random
-import numpy as np
+import numpy as np, os
 import pandas as pd
 #import seaborn as sns
 import random
