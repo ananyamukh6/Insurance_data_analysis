@@ -9,6 +9,8 @@ import random
 #from pandas.io import sql
 import scipy
 import sklearn
+from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
+
 
 # scikit learn
 #from sklearn import cross_validation
@@ -109,11 +111,10 @@ def filterdata(data):
     return grouppedata
 
 
-partd_file = "./data/PartD_Prescriber_PUF_NPI_Drug_16_short.csv"
+partd_file = "./data/PartD_Prescriber_PUF_NPI_Drug_16.csv"
 npiexc_file = "./data/UPDATED.CSV"
 npi_exclusion = read_data(npiexc_file)
 orig = process_df(read_data(partd_file))
-pdb.set_trace()
 npi_exclusion.columns = map(str.lower, npi_exclusion.columns)
 labelled_data = orig.assign(label = orig.npi.isin(npi_exclusion.npi))
 
@@ -124,27 +125,34 @@ summarize(labelled_data)
 cat_map = compute_all_cat_maps(labelled_data)
 data = transform_all_cat_columns(labelled_data, cat_map)
 data = filterdata(data)
-print(len(data.loc[data['label'] == 0]))
-print(len(data.loc[data['label'] == 1]))
-##dataframe that have rows where label =1
+print("Number of non-frauds ", len(data.loc[data['label'] == 0]))
+print("Number of frauds", len(data.loc[data['label'] == 1])) ##dataframe that have rows where label =1
 data_label_true = data.loc[data['label'] == 1]
 data_label_false = data.loc[data['label'] == 0]
-data_label_false = data_label_false.head(500)
+data_label_false = data_label_false.head(50)
 df_concat = pd.concat([data_label_true, data_label_false], axis=0)
 
-train, val, test = split_df(data, [0.5,0.25,0.25])
-train, val, test = split_df(df_concat, [0.5,0.25,0.25])
+#train, val, test = split_df(data, [0.5,0.25,0.25])
+#train, val, test = split_df(df_concat, [0.5,0.25,0.25])
+train = test = data
 
 y_train = train["label"].values
-X_train =  train.loc[:, train.columns != 'label']
-pdb.set_trace()
+X_train = train.loc[:, train.columns != 'label']
 
 #clf1 = LogisticRegression() # pimp me
 #clf2 = RandomForestClassifier(n_estimators =100, max_depth = 10, class_weight = 'auto'
 #clf1.fit(x_train,y_train)
 #clf2.fit(x_train.toarray(),y_train)
-clf = LogisticRegression().fit(X_train, y_train)
-pdb.set_trace()
+clf = LogisticRegression()
+clf.fit(X_train, y_train)
 
+y_pred = clf.predict(X_train)
+y_scores = clf.predict_proba(X_train)
+
+pdb.set_trace()
+print("Accuracy: ", accuracy_score(y_train, y_pred))
+print("F1_score", f1_score(y_train, y_pred))
+print("roc ", roc_auc_score(y_train, y_scores))
+pdb.set_trace()
 
 
