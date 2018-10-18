@@ -9,7 +9,7 @@ import random
 #from pandas.io import sql
 import scipy
 import sklearn
-from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
+from sklearn.metrics import accuracy_score, f1_score, roc_auc_score, auc, roc_curve
 import pickle as pkl
 
 # scikit learn
@@ -138,7 +138,7 @@ def get_train_test_data():
 
         #train, val, test = split_df(data, [0.5,0.25,0.25])
         #train, val, test = split_df(df_concat, [0.5,0.25,0.25])
-        train = test = data
+        train = test = df_concat
         pkl.dump([train, test], open(cachefile, 'w'))
     return train, test
 
@@ -147,20 +147,39 @@ train, test = get_train_test_data()
 y_train = train["label"].values
 X_train = train.loc[:, train.columns != 'label']
 
+y_test = y_train
+
+
 #clf1 = LogisticRegression() # pimp me
 #clf2 = RandomForestClassifier(n_estimators =100, max_depth = 10, class_weight = 'auto'
 #clf1.fit(x_train,y_train)
 #clf2.fit(x_train.toarray(),y_train)
-clf = LogisticRegression()
+clf = LogisticRegression(max_iter=500)
 clf.fit(X_train, y_train)
 
 y_pred = clf.predict(X_train)
-y_scores = clf.predict_proba(X_train)
+proba = clf.predict_proba(X_train)
+y_scores = proba[:,1]
 
-pdb.set_trace()
+
 print("Accuracy: ", accuracy_score(y_train, y_pred))
 print("F1_score", f1_score(y_train, y_pred))
 print("roc ", roc_auc_score(y_train, y_scores))
-pdb.set_trace()
+fpr, tpr, threshold = roc_curve(y_test, y_scores)
+roc_auc = auc(fpr, tpr)
+print('roc_auc', roc_auc)
+
+import matplotlib.pyplot as plt
+plt.title('Receiver Operating Characteristic')
+plt.plot(fpr, tpr, 'b', label = 'AUC = %0.2f' % roc_auc)
+plt.legend(loc = 'lower right')
+plt.plot([0, 1], [0, 1],'r--')
+plt.xlim([0, 1])
+plt.ylim([0, 1])
+plt.ylabel('True Positive Rate')
+plt.xlabel('False Positive Rate')
+plt.show()
+
+
 
 
