@@ -16,7 +16,7 @@ def filterdata(data):
     return data
 
 
-filename = "/Users/ananymuk/Desktop/Ananya/OracleTrainingLab/capstone/code1/Insurance_data_analysis/data/PartD_Prescriber_PUF_NPI_Drug_16_short2.csv"
+filename = "./data/PartD_Prescriber_PUF_NPI_Drug_16_short2.csv"
 data = process_df(read_data(filename))
 summarize(data)
 train, val, test = split_df(data, [0.5,0.25,0.25])
