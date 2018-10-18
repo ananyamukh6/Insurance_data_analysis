@@ -10,7 +10,7 @@ import random
 import scipy
 import sklearn
 from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
-
+import pickle as pkl
 
 # scikit learn
 #from sklearn import cross_validation
@@ -110,32 +110,40 @@ def filterdata(data):
     #pdb.set_trace()
     return grouppedata
 
+def get_train_test_data():
+    cachefile = './data/train_test_data.pkl'
+    if os.path.isfile(cachefile):
+        train, test = pkl.load(open(cachefile))
+    else:
+        partd_file = "./data/PartD_Prescriber_PUF_NPI_Drug_16.csv"
+        npiexc_file = "./data/UPDATED.CSV"
+        npi_exclusion = read_data(npiexc_file)
+        orig = process_df(read_data(partd_file))
+        npi_exclusion.columns = map(str.lower, npi_exclusion.columns)
+        labelled_data = orig.assign(label = orig.npi.isin(npi_exclusion.npi))
 
-partd_file = "./data/PartD_Prescriber_PUF_NPI_Drug_16.csv"
-npiexc_file = "./data/UPDATED.CSV"
-npi_exclusion = read_data(npiexc_file)
-orig = process_df(read_data(partd_file))
-npi_exclusion.columns = map(str.lower, npi_exclusion.columns)
-labelled_data = orig.assign(label = orig.npi.isin(npi_exclusion.npi))
+
+        summarize(labelled_data)
+        summarize(labelled_data)
+
+        cat_map = compute_all_cat_maps(labelled_data)
+        data = transform_all_cat_columns(labelled_data, cat_map)
+        data = filterdata(data)
+        print("Number of non-frauds ", len(data.loc[data['label'] == 0]))
+        print("Number of frauds", len(data.loc[data['label'] == 1])) ##dataframe that have rows where label =1
+        data_label_true = data.loc[data['label'] == 1]
+        data_label_false = data.loc[data['label'] == 0]
+        data_label_false = data_label_false.head(50)
+        df_concat = pd.concat([data_label_true, data_label_false], axis=0)
+
+        #train, val, test = split_df(data, [0.5,0.25,0.25])
+        #train, val, test = split_df(df_concat, [0.5,0.25,0.25])
+        train = test = data
+        pkl.dump([train, test], open(cachefile, 'w'))
+    return train, test
 
 
-summarize(labelled_data)
-summarize(labelled_data)
-
-cat_map = compute_all_cat_maps(labelled_data)
-data = transform_all_cat_columns(labelled_data, cat_map)
-data = filterdata(data)
-print("Number of non-frauds ", len(data.loc[data['label'] == 0]))
-print("Number of frauds", len(data.loc[data['label'] == 1])) ##dataframe that have rows where label =1
-data_label_true = data.loc[data['label'] == 1]
-data_label_false = data.loc[data['label'] == 0]
-data_label_false = data_label_false.head(50)
-df_concat = pd.concat([data_label_true, data_label_false], axis=0)
-
-#train, val, test = split_df(data, [0.5,0.25,0.25])
-#train, val, test = split_df(df_concat, [0.5,0.25,0.25])
-train = test = data
-
+train, test = get_train_test_data()
 y_train = train["label"].values
 X_train = train.loc[:, train.columns != 'label']
 
